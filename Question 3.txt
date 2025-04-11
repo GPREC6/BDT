@@ -1,0 +1,85 @@
+Question 3a:
+
+import java.io.*;  
+import java.util.*;  
+import org.apache.hadoop.conf.*;  
+import org.apache.hadoop.fs.*;  
+import org.apache.hadoop.io.*;  
+import org.apache.hadoop.mapreduce.*;  
+import org.apache.hadoop.mapreduce.lib.input.*;  
+import org.apache.hadoop.mapreduce.lib.output.*;  
+
+public class WordCount {  
+    public static class MapperClass extends Mapper<Object, Text, Text, IntWritable> {  
+        private static final IntWritable one = new IntWritable(1);  
+        private Text word = new Text();  
+
+        public void map(Object key, Text value, Context context) throws IOException, InterruptedException {  
+            StringTokenizer itr = new StringTokenizer(value.toString());  
+            while (itr.hasMoreTokens()) {  
+                word.set(itr.nextToken());  
+                context.write(word, one);  
+            }  
+        }  
+    }  
+
+    public static class ReducerClass extends Reducer<Text, IntWritable, Text, IntWritable> {  
+        public void reduce(Text key, Iterable<IntWritable> values, Context context) throws IOException, InterruptedException {  
+            int sum = 0;  
+            for (IntWritable val : values) sum += val.get();  
+            context.write(key, new IntWritable(sum));  
+        }  
+    }  
+
+    public static void main(String[] args) throws Exception {  
+        Job job = Job.getInstance(new Configuration(), "word count");  
+        job.setJarByClass(WordCount.class);  
+        job.setMapperClass(MapperClass.class);  
+        job.setCombinerClass(ReducerClass.class);  
+        job.setReducerClass(ReducerClass.class);  
+        job.setOutputKeyClass(Text.class);  
+        job.setOutputValueClass(IntWritable.class);  
+        FileInputFormat.addInputPath(job, new Path(args[0]));  
+        FileOutputFormat.setOutputPath(job, new Path(args[1]));  
+        System.exit(job.waitForCompletion(true) ? 0 : 1);  
+    }  
+}
+
+
+open terminal and press following commands to execute this experiment
+hadoop dfs -mkdir /wordin5
+cd Desktop/
+hadoop dfs -copyFromLocal pg4300.txt /wordin
+hadoop jar WordCount.jar WordCount /wordin /wordout
+hadoop dfs -cat /wordout/part-r-00000
+
+
+Question 3b:
+
+>>hdfs dfs -du -h /user/hadoop/
+>>hdfs dfs -du -s -h /user/hadoop/
+>>hdfs dfs -df -h /
+
+
+Question 3c:
+
+gprec.txt
+1,CE,120
+2,EEE,120
+3,ME,120
+4,ECE,180
+5,CSE,300
+
+hdfs dfs -put /home/cloudera/Desktop/gprec.txt /
+pig
+A = LOAD '/gprec.txt' using PigStorage(',') as (sno:int,bname:charArray,st:int);
+DUMP A;
+
+DESCRIBE A;
+
+B = FOREACH A GENERATE bname, st;
+DUMP B;
+
+C= ORDER A BY st DESC;
+DUMP C;
+
